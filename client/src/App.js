@@ -8,44 +8,46 @@ class App extends Component {
     file: '', // the file type the user chooses to download
   }  
 
+
+  afterSetState = () => {
+      
+    Helpers.httpRequest(
+      `http://localhost:5001?file=${this.state.file}`,
+      'get',
+    )// 1. Convert the data into 'blob'
+    .then((response) => response.blob())
+    .then((blob) => {
+
+      // 2. Create blob link to download
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `sample.${this.state.file}`);
+      // 3. Append to html page
+      document.body.appendChild(link);
+      // 4. Force download
+      link.click();
+      // 5. Clean up and remove the link
+      link.parentNode.removeChild(link);
+            this.setState({
+              loading: false
+            });
+          })
+    .catch((error) => {
+      error.json().then((json) => {
+        this.setState({
+          errors: json,
+          loading: false
+        });
+      })
+    });
+  }
+
   handleSubmit = (event) => {
     this.setState({
       errors: null,
       loading: true,
-    }, () => {
-      
-      Helpers.httpRequest(
-        `http://localhost:5001?file=${this.state.file}`,
-        'get',
-      )// 1. Convert the data into 'blob'
-.then((response) => response.blob())
-.then((blob) => {
- 
-  // 2. Create blob link to download
-  const url = window.URL.createObjectURL(new Blob([blob]));
-  const link = document.createElement('a');
-  link.href = url;
-  link.setAttribute('download', `sample.${this.state.file}`);
-  // 3. Append to html page
-  document.body.appendChild(link);
-  // 4. Force download
-  link.click();
-  // 5. Clean up and remove the link
-  link.parentNode.removeChild(link);
-        this.setState({
-          loading: false
-        });
-      })
-      .catch((error) => {
-        error.json().then((json) => {
-          this.setState({
-            errors: json,
-            loading: false
-          });
-        })
-      });
-    });
-    
+    }, this.afterSetState);
     event.preventDefault();
   } 
   
